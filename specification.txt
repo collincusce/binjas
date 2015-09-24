@@ -1,0 +1,199 @@
+BinJaS! The Binary Javascript Serializer
+
+-- Specification Document v0.1, Pre-Release --
+
+Structure of Serialized Data:
+
+    Preamble - Necessary information for decoding the binary Constitution
+        - Not of Variable Size
+        - Starts predictable
+    Constitution - Necessary information for decoding the Population
+        - Documents carry their own parser
+        - Defines the document's structure
+    Population - The data itself
+
+Restrictions:
+
+    All encoding is little-endian:
+        "increasing numeric significance with increasing memory addresses (or increasing time)"
+        Allows us to truncate irrelevant bits
+    The topmost element will always be an Object or an Array
+    Anything that can be numeric, will be numeric. 
+        It is on the user to decide to cast their values.
+        The only exceptions are:
+            Strings
+            Object Keys
+    No Object or Array may contain more than 2^53 elements
+    No String may contain more than 2^53 characters
+    Numbers must obey ECMA 262-5 standards as seen in section 8.5
+        http://ecma262-5.com/ELS5_HTML.htm#Section_8.5
+        Integers restricted to +/-2^53
+        Floats are 64 bits
+    No data other than (signatures defined below):
+        Characters (char)
+        Integers (int)
+        Floats (float)
+        Boolean (bool)
+        Objects (obj)
+        Arrays (arr)
+    Arrays are either mixed or static depending on definition
+    Strings are a special case of static character Arrays
+    Objects are all mixed.
+    Object members are Strings and must be defined in the Constitution
+    Object members may not be longer than 256 Characters in length
+    The data encoding must be uniform and declared in the Preamble
+    For Integers, 53 bits for value
+    For Characters, size depends on the encoding
+    For Booleans, it will always be one bit
+
+Points of Possible Error:
+
+    Single Floats will always take more space than arrays of Floats of size greater than 2
+    Arrays of Floats are the most significantly efficient use of space... 
+        ...however Floats still use more space than other scalar pieces of data.
+    We will automatically convert Integers and Floats from Strings
+    The entire document is sent as a bit stream:
+        Length N*64 bits
+        N is the length of the number of elements needed to represent the document
+        N is *NOT* pre-calculated in the Constitution
+    If it does not pass integrity checks, the entire Population is discarded
+    If there are insufficient bits to read, the entire Population is rejected
+    If there are too many bits greater than N*64, the entire Population is rejected
+    If the rules are not strictly followed, the entire Population is rejected
+    Empty Objects, Arrays, and Strings (those of size 0) will still be created. 
+    NULL values - TBD
+
+Parser:
+
+    Preamble:
+        Character Encoding:
+            {ascii, utf-8, utf-16}
+            {01, 10, 11}
+            2 bits, one value (00) unallocated
+        Number of elements in Constitution:
+            Includes elements which are Objects, Arrays, Characters, Integers, or Floats
+            Max size of 2^53 elements
+        Number of elements in Population
+            Includes elements which are Objects, Arrays, Characters, Integers, or Floats
+            Max size of 2^53 elements
+        108 bits total
+            20 bits unallocated
+            1 value unallocated
+           
+    Constitution:
+        Ordering:  KEY - <META> - <COUNT_or_DATA>
+        # of bits:  2     2-3          53-64 
+        KEY is defined in Primary Keys Table below
+        META and COUNT_or_DATA are optional depending on the KEY
+        META describes what to expect in the KEY's COUNT_or_DATA for:
+            Numeric types
+            Array types
+        META will contain the the specific type of Numeric value for Numeric types
+        META will also tell an array if it's static or mixed and if so what is the static type.
+        In the case of an Object and  Character type, no META is required. 
+        COUNT_or_DATA may not exceed 2^53
+        COUNT_or_DATA represents either:
+            The number of children
+            The data of the scalar
+    
+    Population:
+        A stream of binary data with no notable demarcation. 
+        Input for the rules established in the Constitution. 
+        
+Primary Keys
+00| Character - A single Character
+01| Numeric - An Integer, Float, or a Boolean
+10| Object - Key-Value Map Table / Associative Array / Dictionary / Object / Hash ... etc.
+11| Array - An array that can be either static or typed
+
+00| Characters:
+    A Character is encoded in the form specified in the Preamble.
+    
+01| Numeric:
+    META == 00:
+        Boolean - The following bit is a truth value. 
+    META == 01:
+        Integer - The following up-to 53 bits represent the Integer value. 
+        Will simply take the bits in-order and interpret them. 
+        First bit processed is the low-order bit. 
+        Last bit processed is the sign bit.
+        11 bits will be inserted in decode for an exponent of 10000000000 
+        2nd META == {00,01,10,11}
+            We know we have 52 bits representing the fractional value of an IEEE 754 FP Integer...
+            ... without a sign bit...we can truncate numbers that are small, though.
+            Most numbers are significantly smaller than 52 bits.
+            Most numbers are significantly smaller than 26 bits!
+            The 2nd meta tells the decoder when its job would be done. 
+                00| Go to the end of the full 52 bits
+                01| Process bits 0-12 and stop, zero-fill the rest
+                10| Process bits 0-25 and stop, zero-fill the rest
+                11| Process bits 0-38 and stop, zero-fill the rest
+    META == 10:
+        Float - The following up-to 64 bits represent the Float value... 
+        Adheres to the IEEE Floating Point Standard (https://en.wikipedia.org/wiki/IEEE_floating_point)
+        Will simply take the bits in-order and interpret them. 
+        First bit processed is the low-order bit. 
+        2nd META == {00,01,10,11}
+            We know we have 52 bits representing the fractional value of an IEEE 754 FP Float...
+            ... without a sign bit...we can truncate numbers that are small, though.
+            Most numbers are significantly smaller than 52 bits.
+            Most numbers are significantly smaller than 26 bits!
+            The 2nd meta tells the decoder when its job would be done. 
+                00| Go to the end of the full 52 bits
+                01| Process bits 0-12 and stop, zero-fill the rest
+                10| Process bits 0-25 and stop, zero-fill the rest
+                11| Process bits 0-38 and stop, zero-fill the rest
+
+10| Object:
+    COUNT_or_DATA represents the number of members within the Object.
+    Immediately following COUNT_or_DATA is an Array of Strings of that size.
+        These are the in-order representation of the names of the members.
+        There should be no name collisions, meaning this Array is full of unique String values.  
+    Immediately following this Array of member names is the data associated with this Object.
+        These are in-order associated with the Array of member names.
+        They can be any data type. 
+        
+11| Array:
+    META == 111:
+        Mixed Array - Each item within this array can be any type. 
+        Each item's type is determined by that item's Primary Key
+    META == 000:
+        Empty Array - Total nothingness. 
+        No assumptions are made with regard to how this is handled on decode.
+            ...NULL
+            ...Empty String?
+            ...Undefined?
+            ...False?
+            Not our problem.
+        There is no COUNT_or_DATA field for this array. Move along, nothing to see here.
+    META == 001:
+        Boolean Array - Each item within this Array is a Boolean truth value.
+        Each item 1 bit long
+        There is no reason to have a Primary Key.
+        Is of length COUNT_or_DATA
+    META == 010:
+        Integer Array - Each item within this Array is an Integer.
+        Each item is 53 bits long, no truncation
+        There is no reason to have a Primary Key.
+        Is of length COUNT_or_DATA
+    META == 011:
+        Float Array - Each item within this Array is a Floating point number.
+        Each item is 64 bits long, no truncation
+        There is no reason to have a Primary Key.
+        Is of length COUNT_or_DATA
+    META == 100:
+        Character Array - Each item within this array is a single Character. 
+        Will *not* be turned into a String on decode
+        Each item is a fixed length long depending on character encoding
+        There is no reason for a Primary Key. 
+        Is of length COUNT_or_DATA
+    META == 101:
+        String Array - Each item within this array is a Character. 
+        Will be turned into a String on decode, not an Array of Characters.
+        Each item is a fixed length long depending on character encoding
+        Is of length COUNT_or_DATA
+        Does not have Primary Key.
+        Is encoded to Preamble specifications. 
+        
+    
+        
