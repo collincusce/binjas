@@ -14,8 +14,12 @@ Structure of Serialized Data:
 
 Restrictions:
 
-    All encoding is little-endian:
-        "increasing numeric significance with increasing memory addresses (or increasing time)"
+    All encoding has decreasing significance:
+        6 in binary is 011
+        We encode in-order, so we push 0 then 1 then 1
+        This means our stack will be: 110
+        When we read it, we pop off 1, 1, 0
+        This results in a binary string of 011
         Allows us to truncate irrelevant bits
     The topmost element will always be an Object or an Array
     Anything that can be numeric, will be numeric. 
