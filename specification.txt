@@ -119,9 +119,11 @@ Primary Keys
     META == 01:
         Integer - The following up-to 53 bits represent the Integer value. 
         Will simply take the bits in-order and interpret them. 
-        First bit processed is the low-order bit. 
-        Last bit processed is the sign bit.
-        11 bits will be inserted in decode for an exponent of 10000000000 
+        First bit read is the high-order bit. 
+        The next-to-last bit read is the low-order bit. 
+        Last bit read is the sign bit.
+        The bits are the absolute value of the integer. 
+        ex: -2 = 0000000000101 // 12 integer bits + 1 sign bit (the last bit)
         2nd META == {00,01,10,11}
             We know we have 52 bits representing the fractional value of an IEEE 754 FP Integer...
             ... without a sign bit...we can truncate numbers that are small, though.
@@ -129,9 +131,9 @@ Primary Keys
             Most numbers are significantly smaller than 26 bits!
             The 2nd meta tells the decoder when its job would be done. 
                 00| Go to the end of the full 52 bits
-                01| Process bits 0-12 and stop, zero-fill the rest
-                10| Process bits 0-25 and stop, zero-fill the rest
-                11| Process bits 0-38 and stop, zero-fill the rest
+                01| Process bits 1-13 and stop, zero-fill the rest
+                10| Process bits 1-26 and stop, zero-fill the rest
+                11| Process bits 1-39 and stop, zero-fill the rest
     META == 10:
         Float - The following up-to 64 bits represent the Float value... 
         Adheres to the IEEE Floating Point Standard (https://en.wikipedia.org/wiki/IEEE_floating_point)
