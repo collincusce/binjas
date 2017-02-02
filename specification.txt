@@ -85,20 +85,18 @@ Parser:
             1 value unallocated
            
     Constitution:
-        Ordering:  KEY - <META> - <COUNT_or_DATA>
-        # of bits:  2     2-3          53-64 
+        Ordering:  KEY - <META> - <DATA_COUNT>
+        # of bits:  2     2-3          52 
         KEY is defined in Primary Keys Table below
         META and DATA_COUNT are optional depending on the KEY
-        META describes what to expect in the KEY's COUNT_or_DATA for:
+        META describes what to expect in the KEY's DATA_COUNT for:
             Numeric types
             Array types
         META will contain the the specific type of Numeric value for Numeric types
         META will also tell an array if it's static or mixed and if so what is the static type.
         In the case of an Object and  Character type, no META is required. 
-        DATA_COUNT may not exceed 2^53
-        DATA_COUNT represents either:
-            The number of children
-            The data of the scalar
+        DATA_COUNT may not exceed 2^31 (no sign bit)
+        DATA_COUNT represents the number of children
     
     Population:
         A stream of binary data with no notable demarcation. 
@@ -152,12 +150,12 @@ Primary Keys
 
 10| Object:
     DATA_COUNT represents the number of members within the Object.
-    Immediately following DATA_COUNT is an Array of Strings of that size.
-        These are the in-order representation of the names of the members.
-        There should be no name collisions, meaning this Array is full of unique String values.  
-    Immediately following this Array of member names is the data associated with this Object.
-        These are in-order associated with the Array of member names.
-        They can be any data type. 
+        Array of Strings of size DATA_COUNT.
+            These are the in-order representation of the names of the members.
+            There should be no name collisions, meaning this Array is full of unique String values.  
+        Immediately following this Array of member names is the data associated with this Object.
+            These are in-order associated with the Array of member names.
+            They can be any data type. 
         
 11| Array:
     META == 111:
