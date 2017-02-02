@@ -88,15 +88,15 @@ Parser:
         Ordering:  KEY - <META> - <COUNT_or_DATA>
         # of bits:  2     2-3          53-64 
         KEY is defined in Primary Keys Table below
-        META and COUNT_or_DATA are optional depending on the KEY
+        META and DATA_COUNT are optional depending on the KEY
         META describes what to expect in the KEY's COUNT_or_DATA for:
             Numeric types
             Array types
         META will contain the the specific type of Numeric value for Numeric types
         META will also tell an array if it's static or mixed and if so what is the static type.
         In the case of an Object and  Character type, no META is required. 
-        COUNT_or_DATA may not exceed 2^53
-        COUNT_or_DATA represents either:
+        DATA_COUNT may not exceed 2^53
+        DATA_COUNT represents either:
             The number of children
             The data of the scalar
     
@@ -151,8 +151,8 @@ Primary Keys
                 11| Process bits 0-38 and stop, zero-fill the rest
 
 10| Object:
-    COUNT_or_DATA represents the number of members within the Object.
-    Immediately following COUNT_or_DATA is an Array of Strings of that size.
+    DATA_COUNT represents the number of members within the Object.
+    Immediately following DATA_COUNT is an Array of Strings of that size.
         These are the in-order representation of the names of the members.
         There should be no name collisions, meaning this Array is full of unique String values.  
     Immediately following this Array of member names is the data associated with this Object.
@@ -171,33 +171,33 @@ Primary Keys
             ...Undefined?
             ...False?
             Not our problem.
-        There is no COUNT_or_DATA field for this array. Move along, nothing to see here.
+        There is no DATA_COUNT field for this array. Move along, nothing to see here.
     META == 001:
         Boolean Array - Each item within this Array is a Boolean truth value.
         Each item 1 bit long
         There is no reason to have a Primary Key.
-        Is of length COUNT_or_DATA
+        Is of length DATA_COUNT
     META == 010:
         Integer Array - Each item within this Array is an Integer.
         Each item is 53 bits long, no truncation
         There is no reason to have a Primary Key.
-        Is of length COUNT_or_DATA
+        Is of length DATA_COUNT
     META == 011:
         Float Array - Each item within this Array is a Floating point number.
         Each item is 64 bits long, no truncation
         There is no reason to have a Primary Key.
-        Is of length COUNT_or_DATA
+        Is of length DATA_COUNT
     META == 100:
         Character Array - Each item within this array is a single Character. 
         Will *not* be turned into a String on decode
         Each item is a fixed length long depending on character encoding
         There is no reason for a Primary Key. 
-        Is of length COUNT_or_DATA
+        Is of length DATA_COUNT
     META == 101:
         String Array - Each item within this array is a Character. 
         Will be turned into a String on decode, not an Array of Characters.
         Each item is a fixed length long depending on character encoding
-        Is of length COUNT_or_DATA
+        Is of length DATA_COUNT
         Does not have Primary Key.
         Is encoded to Preamble specifications. 
         
