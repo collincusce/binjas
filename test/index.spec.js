@@ -1,7 +1,7 @@
 /* global describe, it, before */
 
 import chai from 'chai';
-import {Cat, Dog} from '../lib/webpack-library-starter.js';
+import {binjas} from '../lib/binjas.js';
 
 chai.expect();
 
@@ -9,24 +9,14 @@ const expect = chai.expect;
 
 let lib;
 
-describe('Given an instance of my Cat library', () => {
+describe('Given an instance of my BinaryParser library', () => {
   before(() => {
-    lib = new Cat();
+    lib = binjas;
   });
-  describe('when I need the name', () => {
-    it('should return the name', () => {
-      expect(lib.name).to.be.equal('Cat');
+  describe('It should show a default of "be" for big-endian', () => {
+    it('should be equalt to "big-endian"', () => {
+      expect(lib.endian).to.be.equal('be');
     });
   });
 });
 
-describe('Given an instance of my Dog library', () => {
-  before(() => {
-    lib = new Dog();
-  });
-  describe('when I need the name', () => {
-    it('should return the name', () => {
-      expect(lib.name).to.be.equal('Dog');
-    });
-  });
-});

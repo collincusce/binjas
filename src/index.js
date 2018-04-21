@@ -1,3 +1,5 @@
-import Cat from './cat.js';
-import Dog from './dog.js';
-export { Dog, Cat };
+import {Parser as BinaryParser} from 'binary-parser';
+
+const binjas = new BinaryParser();
+
+export {binjas};
